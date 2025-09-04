@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="res_partner_menu_odoo17_data"
+              name="Fetch Data"
+              action="data_transfer_wizard_action"
+              parent="contacts.menu_contacts"
+              sequence="4">
+    </menuitem>
+</odoo>

@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_data_transfer_wizard,access.data.transfer.wizard,odoo_data_transfer.model_data_transfer_wizard,base.group_user,1,1,1,1
