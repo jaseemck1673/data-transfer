@@ -1,10 +1,6 @@
 """ data transfer wizard"""
-from email.policy import default
-
 from odoo import models, fields
 import xmlrpc.client as xmlrpclib
-import json
-from odoo import Command
 
 
 class DataTransferWizard(models.TransientModel):
@@ -12,28 +8,30 @@ class DataTransferWizard(models.TransientModel):
     _name = 'data.transfer.wizard'
     _description = 'Wizard for data fetching'
 
-    password = fields.Char(string='Password')
-    username = fields.Char(string='Username')
-    server_url = fields.Char(string='Server URL', default='http://localhost:8017')
-    db_name = fields.Char(string='Database name')
+    password = fields.Char(string='Password', required=True)
+    username = fields.Char(string='Username', required=True)
+    server_url = fields.Char(string='Server URL', default='http://localhost:8017', required=True)
+    db_name = fields.Char(string='Database name', required=True)
+    db_id = fields.Many2one('database.detail', string='Database')
 
     def data_fetch(self):
         """ Function for fetch and transfer datas"""
         res_partner_to_create = []
         # -----------------------------------------------------------------
-        model_url_1 = self.server_url
-        url_common_1 = xmlrpclib.ServerProxy('{}/xmlrpc/2/common'.format(model_url_1))
-        db_1 = 'odoo17.1'
-        username_1 = 'admin'
-        pwd_1 = 'admin'
-        uid_1 = url_common_1.authenticate(db_1, username_1, pwd_1, {})
-        if uid_1:
-            print("Authentication success")
-        else:
-            print("Authentication failed")
-        url_model_1 = xmlrpclib.ServerProxy('{}/xmlrpc/2/object'.format(model_url_1))
-        res_partner_from = url_model_1.execute_kw(db_1, uid_1, pwd_1, 'res.partner', 'search_read', [[]], {
-        })
+        if self.db_id:
+            model_url_1 = self.db_id.server_url
+            url_common_1 = xmlrpclib.ServerProxy('{}/xmlrpc/2/common'.format(model_url_1))
+            db_1 = self.db_id.name
+            username_1 = self.db_id.username
+            pwd_1 = self.db_id.password
+            uid_1 = url_common_1.authenticate(db_1, username_1, pwd_1, {})
+            if uid_1:
+                print("Authentication success")
+            else:
+                print("Authentication failed")
+            url_model_1 = xmlrpclib.ServerProxy('{}/xmlrpc/2/object'.format(model_url_1))
+            res_partner_from = url_model_1.execute_kw(db_1, uid_1, pwd_1, 'res.partner', 'search_read', [[]], {
+            })
         # ---------------------------------------------------------
         model_url_2 = 'http://localhost:8018'
         url_common_2 = xmlrpclib.ServerProxy('{}/xmlrpc/2/common'.format(model_url_2))
@@ -46,17 +44,21 @@ class DataTransferWizard(models.TransientModel):
         else:
             print("Authentication failed")
         url_model_2 = xmlrpclib.ServerProxy('{}/xmlrpc/2/object'.format(model_url_2))
-        res_partner_to = url_model_2.execute_kw(db_2, uid_2, pwd_2, 'res.partner', 'search_read', [[]])
-        res_partner_to_names = [rec.get('name', None) for rec in res_partner_to if rec]
+        res_partner_to = url_model_2.execute_kw(db_2, uid_2, pwd_2, 'res.partner', 'search_read', [[('old_db_name', '=', self.db_id.name)]])
+        # ---------------------------------------------------------
+        res_partner_to_ids = [rec.get('old_db_id', None) for rec in res_partner_to if rec]
         length = len(res_partner_from)
         for index in range(length):
-            if res_partner_from and res_partner_from[index]['name'] not in res_partner_to_names:
+            if res_partner_from and res_partner_from[index]['id'] not in res_partner_to_ids:
                 res_partner_to_create.append(res_partner_from[index])
         create_data = self.data_create(res_partner_to_create)
 
         if create_data:
             data_added = url_model_2.execute_kw(db_2, uid_2, pwd_2, 'res.partner', 'create', [create_data])
-            self.link_child_ids()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
 
     def data_create(self, datas):
         """ Method for fetched value adding into dictionary"""
@@ -84,7 +86,7 @@ class DataTransferWizard(models.TransientModel):
                                 'employee': value['employee'],
                                 'function': value['function'], 'type': value['type'], 'street': value['street'],
                                 'street2': value['street2'],
-                                'zip': value['zip'], 'city': value['city'], 'state_id': value['state_id'][0],
+                                'zip': value['zip'], 'city': value['city'], 'state_id': value['state_id'][0] or '',
                                 'country_id': value['country_id'][0], 'country_code': value['country_code'],
                                 'partner_latitude': value['partner_latitude'],
                                 'partner_longitude': value['partner_longitude'], 'email': value['email'],
@@ -97,10 +99,7 @@ class DataTransferWizard(models.TransientModel):
                                 'commercial_company_name': value['commercial_company_name'],
                                 'company_name': value['company_name'], 'barcode': value['barcode'],
                                 'display_name': value['display_name'],
-                                # 'create_uid': value['create_uid'], 'create_date': value['create_date'],
-                                # 'write_uid': value['write_uid'][0],
-                                'write_date': value['write_date'], 'im_status': value['im_status'],
-                                # 'channel_ids': value['channel_ids'],
+                                'write_date': value['write_date'],
                                 'contact_address_inline': value['contact_address_inline'],
                                 'signup_type': value['signup_type'],
                                 'additional_info': value['additional_info'],
@@ -108,18 +107,25 @@ class DataTransferWizard(models.TransientModel):
                                 'phone_sanitized_blacklisted': value['phone_sanitized_blacklisted'],
                                 'phone_blacklisted': value['phone_blacklisted'],
                                 'mobile_blacklisted': value['mobile_blacklisted'],
+                                'old_db_name': self.db_id.name,
                                 'phone_mobile_search': value['phone_mobile_search']})
         return create_data
 
-    def link_child_ids(self):
-        """ method for linking child ids"""
-        res_partner = self.env['res.partner'].search([])
-        rec_child_ids = res_partner.filtered(lambda data: data.child_ids_list)
-        old_db_list = res_partner.mapped('old_db_id')
-        for rec in rec_child_ids:
-            for id in old_db_list:
-                if id in json.loads(rec.child_ids_list):
-                    record_id = res_partner.filtered(lambda rec: rec.old_db_id == id).id
-                    rec.write({
-                        'child_ids': [Command.link(record_id)]
-                    })
+    def action_new_db_detail(self):
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": "data.transfer.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "views": [(self.env.ref("odoo_data_transfer.database_creation_wizard_view_form").id, "form")],
+        }
+
+    def action_create_db_details(self):
+        print(self.db_name, self.server_url, self.password, self.username)
+        self.env['database.detail'].create({
+            'name': self.db_name,
+            'server_url': self.server_url,
+            'password': self.password,
+            'username': self.username
+        })
+        print('created')

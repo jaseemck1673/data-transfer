@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!--Data Transfer Wizard Form View -->
+    <record id="database_creation_wizard_view_form" model="ir.ui.view">
+        <field name="name">database.creation.wizard.view.form</field>
+        <field name="model">data.transfer.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="server_url"/>
+                    <field name="db_name"/>
+                    <field name="username"/>
+                    <field name="password" string="Password"/>
+                </group>
+                <footer>
+                    <button name="action_create_db_details" string="Confirm" type="object"
+                            class="btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Data Transfer Wizard action  -->
+    <record id="database_creation_wizard_action" model="ir.actions.act_window">
+        <field name="name">Database Creation Wizard</field>
+        <field name="res_model">data.transfer.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_ids" eval="[Command.clear(),
+            Command.create({'view_mode': 'form','sequence': 2, 'view_id': ref('database_creation_wizard_view_form')}),
+        ]"/>
+    </record>
+
+</odoo>

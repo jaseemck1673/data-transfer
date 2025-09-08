@@ -7,14 +7,13 @@
         <field name="arch" type="xml">
             <form>
                 <group>
-                    <field name="server_url"/>
-                    <field name="db_name"/>
-                    <field name="username"/>
-                    <field name="password" string="Password"/>
+                    <field name="db_id"/>
                 </group>
                 <footer>
                     <button name="data_fetch" string="Confirm" type="object"
                             class="btn-primary"/>
+                    <button name="action_new_db_detail" string="New Database" type="object"
+                            />
                 </footer>
             </form>
         </field>

@@ -24,8 +24,17 @@ Long description of module's purpose
     'data': [
         # 'security/ir.model.access.csv',
         'wizard/data_transfer_wizard_view.xml',
+        "wizard/databse_creation_wizard_view.xml",
         'views/contact_menu.xml',
-        'security/ir.model.access.csv'
+        'security/ir.model.access.csv',
+        'views/res_partner_view.xml',
+        # 'views/database_detail.xml'
+
     ],
+    'assets':{
+        'web.assets_backend': [
+            # 'odoo_data_transfer/static/src/js/data_transfer.js',
+        ]
+    }
     # only loaded in demonstration mode
 }

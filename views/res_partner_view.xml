@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="data_transfer_inherit_partner_form" model="ir.ui.view">
+        <field name="name">data.transfer.inherit.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[@name='internal_notes']" position="after">
+                <page string="Other">
+                    <form>
+                        <group>
+                            <field name="old_db_name"/>
+                        </group>
+                    </form>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
